@@ -13,8 +13,11 @@ let cachedClient: calendar_v3.Calendar | null = null;
 export function getCalendarClient(): calendar_v3.Calendar {
   if (cachedClient) return cachedClient;
 
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL?.trim().replace(/^["']|["']$/g, "");
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY
+    ?.trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\\n/g, "\n");
 
   if (!clientEmail || !privateKey) {
     throw new Error(
@@ -33,7 +36,7 @@ export function getCalendarClient(): calendar_v3.Calendar {
 }
 
 export function getCalendarId(): string {
-  const id = process.env.GOOGLE_CALENDAR_ID;
+  const id = process.env.GOOGLE_CALENDAR_ID?.trim().replace(/^["']|["']$/g, "");
   if (!id) throw new Error("Falta GOOGLE_CALENDAR_ID en las variables de entorno.");
   return id;
 }
@@ -50,25 +53,17 @@ export const config = {
  * Para simplificar, se genera un Date en UTC y se agrega el offset vía Intl.
  */
 export function buildDateTimeISO(date: string, time: string): string {
-  // Construimos un Date interpretado en la TZ objetivo.
-  // Truco: crear un Date "naive" y calcular el offset real con Intl.
   const [y, m, d] = date.split("-").map(Number);
   const [hh, mm] = time.split(":").map(Number);
 
-  // Fecha "naive" en UTC
   const naiveUTC = Date.UTC(y, m - 1, d, hh, mm, 0);
-
-  // Obtenemos el offset de la TZ para ese instante
   const offsetMinutes = getTimezoneOffsetMinutes(new Date(naiveUTC), TIMEZONE);
-
-  // El instante real UTC es naiveUTC - offset
   const realUTC = new Date(naiveUTC - offsetMinutes * 60_000);
   return realUTC.toISOString();
 }
 
 /**
  * Devuelve el offset (minutos) de una zona horaria para un instante dado.
- * Positivo = por delante de UTC.
  */
 function getTimezoneOffsetMinutes(date: Date, timeZone: string): number {
   const dtf = new Intl.DateTimeFormat("en-US", {
