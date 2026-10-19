@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Shrikhand&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  font-family: 'Fredoka', sans-serif;
+  background-color: #faf5ea;
+  color: #111111;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tipografía de títulos cartoon nítida y sin desenfoque */
+.font-cartoon {
+  font-family: 'Shrikhand', cursive;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Textura sutil vintage de fondo borde a borde */
+.retro-paper-bg {
+  background-color: #faf5ea;
+  background-image: 
+    radial-gradient(#d8cbb0 0.85px, transparent 0.85px),
+    radial-gradient(#d8cbb0 0.85px, #faf5ea 0.85px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* Animación Idle de la Mascota estilo Rubber Hose */
+@keyframes rubber-bob {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-1deg);
+  }
+}
+
+.animate-rubber-bob {
+  animation: rubber-bob 3.4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+/* Destellos / Estrellitas sutiles estilo cartoon retro para el fondo */
+@keyframes retro-sparkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.18) rotate(8deg);
+    opacity: 0.9;
+  }
+}
+
+@keyframes retro-sparkle-alt {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(0.85) rotate(-8deg);
+    opacity: 0.4;
+  }
+}
+
+.animate-sparkle {
+  animation: retro-sparkle 3.8s ease-in-out infinite;
+}
+
+.animate-sparkle-alt {
+  animation: retro-sparkle-alt 4.4s ease-in-out infinite;
+}
+
+/* Animación de entrada limpia: termina en transform: none para evitar texto borroso */
+@keyframes cartoon-pop {
+  0% { transform: translateY(4px); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+
+.animate-cartoon-pop {
+  animation: cartoon-pop 0.22s ease-out forwards;
+}
+
+/* Botón interactivo elástico retro */
+.retro-btn {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.retro-btn:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #000;
+}
+
+.retro-btn:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px #000;
+}
+
+/* -------------------------------------------------------- */
+/* OBTURADOR / TELÓN IRIS-WIPE VINTAGE AÑOS 30              */
+/* -------------------------------------------------------- */
+@keyframes iris-close-anim {
+  0% {
+    width: 175vmax;
+    height: 175vmax;
+  }
+  100% {
+    width: 0vmax;
+    height: 0vmax;
+  }
+}
+
+@keyframes iris-open-anim {
+  0% {
+    width: 0vmax;
+    height: 0vmax;
+  }
+  100% {
+    width: 175vmax;
+    height: 175vmax;
+  }
+}
+
+.iris-shutter-closing {
+  animation: iris-close-anim 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+.iris-shutter-opening {
+  animation: iris-open-anim 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
