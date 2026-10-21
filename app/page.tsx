@@ -24,7 +24,6 @@ function formatARS(amount: number) {
 
 function nextAvailableDateISO() {
   const d = new Date();
-  // Si hoy es domingo (0), seleccionamos lunes por defecto
   if (d.getDay() === 0) {
     d.setDate(d.getDate() + 1);
   }
@@ -32,6 +31,113 @@ function nextAvailableDateISO() {
   const m = (d.getMonth() + 1).toString().padStart(2, "0");
   const day = d.getDate().toString().padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+/**
+ * Genera una imagen PNG nítida con el comprobante del turno lista para enviar por WhatsApp.
+ */
+function generateTicketImageDataUrl(ticket: {
+  name: string;
+  phone: string;
+  service: string;
+  date: string;
+  time: string;
+}): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = 800;
+  canvas.height = 500;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  // Fondo exterior crema con puntitos
+  ctx.fillStyle = "#faf5ea";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Sombra desplazada de la tarjeta
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.roundRect(46, 36, 716, 436, 28);
+  ctx.fill();
+
+  // Cuerpo de la tarjeta
+  ctx.fillStyle = "#fdfaf3";
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(38, 28, 716, 436, 28);
+  ctx.fill();
+  ctx.stroke();
+
+  // Cabecera morada
+  ctx.fillStyle = "#523450";
+  ctx.beginPath();
+  ctx.roundRect(38, 28, 716, 86, [28, 28, 0, 0]);
+  ctx.fill();
+  ctx.stroke();
+
+  // Título en cabecera
+  ctx.fillStyle = "#fde68a";
+  ctx.font = "900 28px sans-serif";
+  ctx.fillText("STARBNAILS · COMPROBANTE DE TURNO", 68, 82);
+
+  // Línea punteada divisoria
+  ctx.save();
+  ctx.setLineDash([8, 6]);
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(68, 150);
+  ctx.lineTo(724, 150);
+  ctx.stroke();
+  ctx.restore();
+
+  // Datos del turno
+  ctx.fillStyle = "#111111";
+  ctx.font = "900 30px sans-serif";
+  ctx.fillText(`Clienta: ${ticket.name}`, 68, 198);
+
+  ctx.fillStyle = "#222222";
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText(`Servicio: ${ticket.service}`, 68, 245);
+  ctx.fillText(`Fecha: ${ticket.date}   |   Hora: ${ticket.time} hs`, 68, 288);
+  ctx.fillText(`Teléfono: ${ticket.phone}`, 68, 331);
+
+  // Recuadro de seña
+  ctx.fillStyle = "#ffd15c";
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(68, 358, 656, 68, 16);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#111111";
+  ctx.font = "900 21px sans-serif";
+  ctx.fillText(
+    `Seña para confirmar: ${formatARS(DEPOSIT_AMOUNT)} (se descuenta del total)`,
+    92,
+    400
+  );
+
+  // Sello circular derecho
+  ctx.save();
+  ctx.translate(640, 240);
+  ctx.fillStyle = "#ecfdf5";
+  ctx.strokeStyle = "#047857";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(0, 0, 54, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#065f46";
+  ctx.font = "900 15px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("RESERVA", 0, -4);
+  ctx.fillText("REGISTRADA", 0, 16);
+  ctx.restore();
+
+  return canvas.toDataURL("image/png");
 }
 
 /** Destello / Estrellita 4 puntas estilo cartoon retro años 30 */
@@ -76,18 +182,9 @@ export default function HomePage() {
   // Transición Iris-Wipe estilo 1930
   const [irisState, setIrisState] = useState<"idle" | "closing" | "closed" | "opening">("idle");
 
-  // Turno activo recordado
+  // Turno activo (se muestra el mismo comprobante tanto al confirmar como al recargar la página)
   const [activeAppointment, setActiveAppointment] = useState<UserAppointment | null>(null);
   const [checkingSavedAppointment, setCheckingSavedAppointment] = useState(true);
-
-  // Ticket de confirmación
-  const [confirmedTicket, setConfirmedTicket] = useState<{
-    date: string;
-    time: string;
-    service: string;
-    name: string;
-    phone: string;
-  } | null>(null);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -118,7 +215,7 @@ export default function HomePage() {
     }
   }, []);
 
-  // 1. Validar reserva previa
+  // 1. Validar reserva previa guardada en el navegador al cargar o recargar la página
   useEffect(() => {
     async function loadSavedAppointment() {
       try {
@@ -216,14 +313,6 @@ export default function HomePage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newAppointment));
       setActiveAppointment(newAppointment);
 
-      setConfirmedTicket({
-        date,
-        time: selectedSlot.time,
-        service: fullServiceLabel,
-        name: name.trim(),
-        phone: phone.trim(),
-      });
-
       await fetchSlots(date);
 
       await new Promise((r) => setTimeout(r, 350));
@@ -239,6 +328,56 @@ export default function HomePage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Generar imagen del ticket, descargarla/copiarla y abrir WhatsApp con los datos listos
+  const handleFinalizeOnWhatsApp = async (appointment: UserAppointment) => {
+    try {
+      const dataUrl = generateTicketImageDataUrl({
+        name: appointment.name,
+        phone: appointment.phone,
+        service: appointment.service,
+        date: appointment.date,
+        time: appointment.time,
+      });
+
+      if (dataUrl) {
+        // 1. Descarga automática de la imagen del comprobante
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `comprobante-turno-${appointment.date}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 2. Copiar imagen al portapapeles si el navegador lo permite (para pegar directo en WhatsApp)
+        if (navigator.clipboard && "write" in navigator.clipboard) {
+          fetch(dataUrl)
+            .then((r) => r.blob())
+            .then((blob) => {
+              const item = new ClipboardItem({ "image/png": blob });
+              navigator.clipboard.write([item]).catch(() => {});
+            })
+            .catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.error("Error generando imagen del ticket:", e);
+    }
+
+    // 3. Abrir WhatsApp de la dueña con toda la información lista
+    const msg = [
+      "Hola! Agendé un turno en la web y te escribo para enviarte el comprobante y coordinar la seña:",
+      "",
+      `• Nombre: ${appointment.name}`,
+      `• Servicio: ${appointment.service}`,
+      `• Fecha: ${appointment.date}`,
+      `• Hora: ${appointment.time} hs`,
+      `• Seña a abonar: ${formatARS(DEPOSIT_AMOUNT)}`,
+    ].join("\n");
+
+    const waUrl = `https://wa.me/549${CONTACT_PHONE}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
   // Cancelar turno
@@ -261,7 +400,6 @@ export default function HomePage() {
 
       localStorage.removeItem(STORAGE_KEY);
       setActiveAppointment(null);
-      setConfirmedTicket(null);
       setShowCancelModal(false);
       setCurrentStep(1);
       await fetchSlots(date);
@@ -273,10 +411,10 @@ export default function HomePage() {
     }
   };
 
-  const stepHeaderTitle = confirmedTicket
-    ? "¡Turno Confirmado!"
-    : !checkingSavedAppointment && activeAppointment
-    ? "Tu Cita Reservada"
+  const hasActiveTicket = !checkingSavedAppointment && activeAppointment !== null;
+
+  const stepHeaderTitle = hasActiveTicket
+    ? "Comprobante de Cita"
     : currentStep === 1
     ? "1. Elegí tu Servicio"
     : currentStep === 2
@@ -407,13 +545,13 @@ export default function HomePage() {
       {/* ------------------------------------------------------------- */}
       <main className="relative z-10 w-[95%] sm:w-[92%] md:max-w-2xl lg:max-w-3xl mx-auto shrink-0">
         <div className="w-full rounded-3xl bg-[#fdfaf3] border-[4px] border-black ring-[3px] ring-[#523450] shadow-[6px_6px_0px_#000] overflow-hidden flex flex-col">
-          {/* Cinta superior del cuadro con el paso actual */}
+          {/* Cinta superior del cuadro */}
           <div className="bg-[#523450] border-b-[3.5px] border-black px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between text-white shrink-0">
             <span className="font-cartoon text-base sm:text-lg md:text-xl tracking-wide text-amber-200">
               {stepHeaderTitle}
             </span>
 
-            {!confirmedTicket && (checkingSavedAppointment || !activeAppointment) && (
+            {!hasActiveTicket && (
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {[1, 2, 3].map((step) => (
                   <div
@@ -434,33 +572,19 @@ export default function HomePage() {
           {/* Cuerpo interno del cuadro */}
           <div className="p-4 sm:p-6 md:p-7">
             {/* ========================================================= */}
-            {/* CASO A: TICKET CONFIRMADO                                 */}
+            {/* VISTA UNIFICADA DEL TICKET (AL CONFIRMAR Y AL RECARGAR)   */}
             {/* ========================================================= */}
-            {confirmedTicket ? (
+            {hasActiveTicket && activeAppointment ? (
               <div className="space-y-4 animate-cartoon-pop">
-                <div className="flex items-center justify-between border-b-2 border-dashed border-black pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-xl text-[#523450]">
-                      confirmation_number
-                    </span>
-                    <span className="font-cartoon text-base sm:text-lg text-slate-950">
-                      COMPROBANTE DE CITA
-                    </span>
-                  </div>
-                  <span className="inline-block bg-[#523450] text-amber-200 px-2.5 py-0.5 rounded-lg border-2 border-black font-cartoon text-xs uppercase shadow-[2px_2px_0px_#000]">
-                    ¡Todo Listo!
-                  </span>
-                </div>
-
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="space-y-1.5 text-center sm:text-left flex-1 text-sm sm:text-base">
                     <h3 className="text-lg sm:text-xl font-black text-slate-950">
-                      {confirmedTicket.name}
+                      {activeAppointment.name}
                     </h3>
                     <p className="font-bold text-slate-800 flex items-center justify-center sm:justify-start gap-1.5">
                       <span className="material-symbols-outlined text-base text-[#523450]">brush</span>
                       <span>
-                        Servicio: <strong className="text-slate-950">{confirmedTicket.service}</strong>
+                        Servicio: <strong className="text-slate-950">{activeAppointment.service}</strong>
                       </span>
                     </p>
                     <p className="font-bold text-slate-800 flex items-center justify-center sm:justify-start gap-1.5">
@@ -468,108 +592,73 @@ export default function HomePage() {
                         calendar_month
                       </span>
                       <span>
-                        Fecha: <strong className="text-slate-950">{confirmedTicket.date}</strong> a las{" "}
-                        <strong className="text-slate-950">{confirmedTicket.time} hs</strong>
+                        Fecha: <strong className="text-slate-950">{activeAppointment.date}</strong> a las{" "}
+                        <strong className="text-slate-950">{activeAppointment.time} hs</strong>
                       </span>
                     </p>
                     <p className="text-xs sm:text-sm font-bold text-slate-700">
-                      Recordá abonar la seña de{" "}
+                      Seña para confirmar:{" "}
                       <strong className="text-slate-950">{formatARS(DEPOSIT_AMOUNT)}</strong> (se descuenta del total).
                     </p>
                   </div>
 
-                  {/* Sello de goma vintage CONFIRMADO */}
+                  {/* Sello circular contenido sin desbordar texto */}
                   <div className="shrink-0">
-                    <div className="w-20 h-20 rounded-full border-[3px] border-emerald-700 text-emerald-800 font-cartoon flex flex-col items-center justify-center p-1.5 shadow-[2px_2px_0px_#000] bg-emerald-50">
-                      <span className="material-symbols-outlined text-xl">verified</span>
-                      <span className="text-[9px] font-black tracking-widest">CITA</span>
-                      <span className="text-[11px] font-cartoon">CONFIRMADA</span>
+                    <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-full border-[3px] border-emerald-700 text-emerald-800 flex flex-col items-center justify-center p-2 shadow-[2px_2px_0px_#000] bg-emerald-50 text-center">
+                      <span className="material-symbols-outlined text-xl mb-0.5">verified</span>
+                      <span className="text-[9px] font-black uppercase tracking-wider leading-tight">
+                        RESERVA
+                      </span>
+                      <span className="text-[10px] font-cartoon leading-tight">
+                        LISTA
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t-2 border-dashed border-black pt-3.5 flex items-center justify-between gap-2">
-                  <span className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-base text-emerald-700">
-                      call
-                    </span>
-                    <span>Consultas: {CONTACT_PHONE}</span>
-                  </span>
+                {/* Botón principal: Descarga el ticket como imagen y abre WhatsApp */}
+                <div className="pt-1">
                   <button
                     type="button"
-                    onClick={() => {
-                      setConfirmedTicket(null);
-                      setCurrentStep(1);
-                    }}
-                    className="retro-btn bg-vintage-yellow hover:bg-amber-300 text-slate-950 px-4 py-2 rounded-xl font-cartoon text-xs sm:text-sm cursor-pointer"
+                    onClick={() => handleFinalizeOnWhatsApp(activeAppointment)}
+                    className="w-full retro-btn bg-vintage-yellow hover:bg-amber-300 text-slate-950 py-3 px-5 rounded-2xl font-cartoon text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    Reservar otro turno
+                    <span className="material-symbols-outlined text-xl text-[#523450]">
+                      chat
+                    </span>
+                    <span>Para finalizar, contactame</span>
                   </button>
-                </div>
-              </div>
-            ) : !checkingSavedAppointment && activeAppointment ? (
-              /* ========================================================= */
-              /* CASO B: TURNO ACTIVO RECORDADO                            */
-              /* ========================================================= */
-              <div className="space-y-4 animate-cartoon-pop">
-                <div className="flex items-center justify-between border-b-2 border-slate-300 pb-2.5">
-                  <span className="text-xs sm:text-sm font-bold text-slate-800">
-                    Detalles de tu próximo turno
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-950 border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
-                    <span className="material-symbols-outlined text-sm">verified</span>
-                    <span>Confirmado</span>
-                  </span>
+                  <p className="text-[11px] font-bold text-slate-600 text-center mt-1.5">
+                    Al tocar se descarga tu ticket en imagen y se abre el chat para enviarlo.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-xs sm:text-sm">
-                  <div className="p-3 rounded-xl bg-amber-50 border-2 border-black">
-                    <div className="text-[10px] font-black uppercase text-slate-600 mb-0.5">
-                      Fecha & Hora
-                    </div>
-                    <div className="font-black text-slate-950">{activeAppointment.date}</div>
-                    <div className="font-cartoon text-[#523450]">{activeAppointment.time} hs</div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-amber-50 border-2 border-black">
-                    <div className="text-[10px] font-black uppercase text-slate-600 mb-0.5">
-                      Servicio
-                    </div>
-                    <div className="font-black text-slate-950 truncate">
-                      {activeAppointment.service}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-amber-50 border-2 border-black">
-                    <div className="text-[10px] font-black uppercase text-slate-600 mb-0.5">
-                      Clienta
-                    </div>
-                    <div className="font-black text-slate-950 truncate">
-                      {activeAppointment.name}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 pt-1">
+                {/* Acciones secundarias (Cancelar / Agendar otro) */}
+                <div className="border-t-2 border-dashed border-black pt-3 flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => setShowCancelModal(true)}
-                    className="retro-btn bg-red-100 text-red-950 hover:bg-red-200 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black inline-flex items-center gap-1.5 cursor-pointer"
+                    className="retro-btn bg-red-100 text-red-950 hover:bg-red-200 px-3.5 py-1.5 rounded-xl text-xs font-black inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-base">cancel</span>
+                    <span className="material-symbols-outlined text-sm">cancel</span>
                     <span>Cancelar turno</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setActiveAppointment(null)}
-                    className="retro-btn bg-vintage-yellow text-slate-950 px-4 py-2 rounded-xl text-xs sm:text-sm font-cartoon cursor-pointer"
+                    onClick={() => {
+                      setActiveAppointment(null);
+                      setCurrentStep(1);
+                    }}
+                    className="retro-btn bg-white hover:bg-slate-50 text-slate-900 px-3.5 py-1.5 rounded-xl font-bold text-xs cursor-pointer"
                   >
-                    Agendar otra cita
+                    Reservar otro turno
                   </button>
                 </div>
               </div>
             ) : (
               /* ========================================================= */
-              /* CASO C: WIZARD DE 3 PASOS AMPLIO Y NÍTIDO                 */
+              /* WIZARD DE 3 PASOS AMPLIO Y NÍTIDO                         */
               /* ========================================================= */
               <div>
                 {/* Mensaje de error si ocurre */}
