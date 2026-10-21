@@ -336,7 +336,7 @@ export default function HomePage() {
       const dataUrl = generateTicketImageDataUrl({
         name: appointment.name,
         phone: appointment.phone,
-        service: appointment.service,
+        service: appointment.service || "Servicio de Manicuría",
         date: appointment.date,
         time: appointment.time,
       });
