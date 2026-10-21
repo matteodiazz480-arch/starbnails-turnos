@@ -19,13 +19,29 @@ export default function DatePicker({ value, onChange }: Props) {
 
   const days = useMemo(() => {
     const today = new Date();
-    return Array.from({ length: 14 }).map((_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const isToday = i === 0;
-      const isTomorrow = i === 1;
+    const list: {
+      iso: string;
+      isToday: boolean;
+      isTomorrow: boolean;
+      badgeLabel: string | null;
+      weekday: string;
+      day: number;
+      month: string;
+    }[] = [];
 
-      return {
+    let offset = 0;
+    // Generamos los próximos 14 días hábiles (Lunes a Sábado, excluyendo Domingos)
+    while (list.length < 14 && offset < 25) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + offset);
+      const isToday = offset === 0;
+      const isTomorrow = offset === 1;
+      offset++;
+
+      // Domingo (0) cerrado
+      if (d.getDay() === 0) continue;
+
+      list.push({
         iso: toISODate(d),
         isToday,
         isTomorrow,
@@ -33,8 +49,10 @@ export default function DatePicker({ value, onChange }: Props) {
         weekday: d.toLocaleDateString("es-AR", { weekday: "short" }).replace(".", "").toUpperCase(),
         day: d.getDate(),
         month: d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "").toUpperCase(),
-      };
-    });
+      });
+    }
+
+    return list;
   }, []);
 
   const scroll = (direction: "left" | "right") => {
@@ -50,7 +68,7 @@ export default function DatePicker({ value, onChange }: Props) {
       <div className="flex items-center justify-between mb-1 px-1">
         <span className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
           <span className="material-symbols-outlined text-base text-[#523450]">calendar_month</span>
-          <span>Elegí el día:</span>
+          <span>Lunes a Sábado:</span>
         </span>
         <div className="flex items-center gap-1.5">
           <button
@@ -72,7 +90,7 @@ export default function DatePicker({ value, onChange }: Props) {
         </div>
       </div>
 
-      {/* Carrusel de fichas de fecha con padding superior para que HOY/MAÑANA no se recorten */}
+      {/* Carrusel de fichas de fecha */}
       <div
         ref={scrollRef}
         className="flex gap-2.5 sm:gap-3 overflow-x-auto pt-4 pb-2.5 px-1.5 scroll-smooth no-scrollbar"

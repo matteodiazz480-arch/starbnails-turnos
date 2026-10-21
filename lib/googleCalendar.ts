@@ -1,9 +1,8 @@
 import { google, calendar_v3 } from "googleapis";
 
 const TIMEZONE = process.env.TIMEZONE || "America/Argentina/Buenos_Aires";
-const BUSINESS_START_HOUR = Number(process.env.BUSINESS_START_HOUR ?? 9);
-const BUSINESS_END_HOUR = Number(process.env.BUSINESS_END_HOUR ?? 18);
-const SLOT_DURATION_MINUTES = Number(process.env.SLOT_DURATION_MINUTES ?? 60);
+// Cada turno dura 1 hora y 15 minutos (75 min)
+const SLOT_DURATION_MINUTES = 75;
 
 let cachedClient: calendar_v3.Calendar | null = null;
 
@@ -43,14 +42,11 @@ export function getCalendarId(): string {
 
 export const config = {
   TIMEZONE,
-  BUSINESS_START_HOUR,
-  BUSINESS_END_HOUR,
   SLOT_DURATION_MINUTES,
 };
 
 /**
  * Convierte "YYYY-MM-DD" + "HH:mm" a un ISO con offset local (usando la TZ configurada).
- * Para simplificar, se genera un Date en UTC y se agrega el offset vía Intl.
  */
 export function buildDateTimeISO(date: string, time: string): string {
   const [y, m, d] = date.split("-").map(Number);
@@ -93,14 +89,39 @@ function getTimezoneOffsetMinutes(date: Date, timeZone: string): number {
 }
 
 /**
- * Genera los bloques horarios del día según la jornada configurada.
+ * Configuración de horarios según el día de la semana (Lunes a Sábado):
+ * - Lunes (1): desde 17:00 (4 turnos de 1h 15m)
+ * - Martes (2): desde 18:30 (3 turnos de 1h 15m)
+ * - Miércoles (3): desde 16:00 (4 turnos de 1h 15m)
+ * - Jueves (4): desde 18:30 (3 turnos de 1h 15m)
+ * - Viernes (5): desde 17:00 (4 turnos de 1h 15m)
+ * - Sábado (6): desde 16:00 (4 turnos de 1h 15m)
+ * - Domingo (0): cerrado
+ */
+const DAY_SCHEDULE: Record<number, { startMinutes: number; maxSlots: number } | null> = {
+  0: null, // Domingo cerrado
+  1: { startMinutes: 17 * 60, maxSlots: 4 }, // Lunes 17:00
+  2: { startMinutes: 18 * 60 + 30, maxSlots: 3 }, // Martes 18:30
+  3: { startMinutes: 16 * 60, maxSlots: 4 }, // Miércoles 16:00
+  4: { startMinutes: 18 * 60 + 30, maxSlots: 3 }, // Jueves 18:30
+  5: { startMinutes: 17 * 60, maxSlots: 4 }, // Viernes 17:00
+  6: { startMinutes: 16 * 60, maxSlots: 4 }, // Sábado 16:00
+};
+
+/**
+ * Genera los bloques horarios del día según la agenda configurada (1h 15min por turno).
  */
 export function generateDaySlots(date: string) {
-  const slots: { time: string; isoStart: string; isoEnd: string }[] = [];
-  const startMin = BUSINESS_START_HOUR * 60;
-  const endMin = BUSINESS_END_HOUR * 60;
+  const [y, month, d] = date.split("-").map(Number);
+  const dayOfWeek = new Date(Date.UTC(y, month - 1, d)).getUTCDay();
+  const schedule = DAY_SCHEDULE[dayOfWeek];
 
-  for (let m = startMin; m + SLOT_DURATION_MINUTES <= endMin; m += SLOT_DURATION_MINUTES) {
+  if (!schedule) return [];
+
+  const slots: { time: string; isoStart: string; isoEnd: string }[] = [];
+
+  for (let i = 0; i < schedule.maxSlots; i++) {
+    const m = schedule.startMinutes + i * SLOT_DURATION_MINUTES;
     const hh = Math.floor(m / 60)
       .toString()
       .padStart(2, "0");

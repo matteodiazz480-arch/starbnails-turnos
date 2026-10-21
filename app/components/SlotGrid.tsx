@@ -40,17 +40,17 @@ export default function SlotGrid({ slots, selected, onSelect, loading }: Props) 
   }
 
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-2.5">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
       {slots.map((s) => {
         const isSelected = selected === s.time;
         if (!s.available) {
           return (
             <div
               key={s.time}
-              className="h-10 sm:h-11 rounded-xl bg-red-50/60 border-2 border-dashed border-red-300 text-red-500 text-xs sm:text-sm font-bold flex items-center justify-center gap-1 cursor-not-allowed select-none"
+              className="h-11 rounded-xl bg-red-50/60 border-2 border-dashed border-red-300 text-red-500 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 cursor-not-allowed select-none"
               title="Horario ocupado"
             >
-              <span className="line-through">{s.time}</span>
+              <span className="line-through">{s.time} hs</span>
               <span className="material-symbols-outlined text-xs">lock</span>
             </div>
           );
@@ -60,20 +60,20 @@ export default function SlotGrid({ slots, selected, onSelect, loading }: Props) 
             key={s.time}
             type="button"
             onClick={() => onSelect(s)}
-            className={`h-10 sm:h-11 rounded-xl text-xs sm:text-sm font-black border-[2.5px] border-black transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 select-none ${
+            className={`h-11 rounded-xl text-xs sm:text-sm font-black border-[2.5px] border-black transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 select-none ${
               isSelected
                 ? "bg-[#523450] text-white shadow-[3px_3px_0px_#000] z-10"
                 : "bg-white text-slate-950 shadow-[2px_2px_0px_#000] hover:bg-amber-100 active:translate-y-0.5 active:shadow-none"
             }`}
           >
             <span
-              className={`material-symbols-outlined text-sm sm:text-base ${
+              className={`material-symbols-outlined text-base ${
                 isSelected ? "text-amber-300" : "text-[#523450]"
               }`}
             >
               schedule
             </span>
-            <span>{s.time}</span>
+            <span>{s.time} hs</span>
           </button>
         );
       })}

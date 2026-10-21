@@ -9,16 +9,25 @@ import type { Slot, SlotsResponse, UserAppointment } from "@/types/booking";
 const STORAGE_KEY = "nails_studio_active_appointment";
 
 const NAIL_SERVICES = [
-  { id: "semi", label: "Semipermanente", desc: "Color y brillo duradero", icon: "brush" },
-  { id: "kapping", label: "Kapping Gel", desc: "Refuerzo para uña natural", icon: "spa" },
-  { id: "softgel", label: "Soft Gel / Esculpidas", desc: "Largo y forma deseada", icon: "diamond" },
-  { id: "nailart", label: "Nail Art & Diseño", desc: "Deco y arte a mano", icon: "palette" },
-  { id: "pedicuria", label: "Belleza de Pies", desc: "Cuidado y esmaltado", icon: "clean_hands" },
-  { id: "retiro", label: "Retiro / Mantenimiento", desc: "Remoción suave de gel", icon: "history" },
+  { id: "semi", label: "Semipermanente", price: 13000, icon: "brush" },
+  { id: "kapping", label: "Kapping", price: 15000, icon: "spa" },
+  { id: "softgel", label: "Soft Gel", price: 16000, icon: "diamond" },
 ];
 
-function todayISO() {
+const REMOVAL_PRICE = 3000;
+const DEPOSIT_AMOUNT = 5000;
+const CONTACT_PHONE = "3804949550";
+
+function formatARS(amount: number) {
+  return `$${amount.toLocaleString("es-AR")}`;
+}
+
+function nextAvailableDateISO() {
   const d = new Date();
+  // Si hoy es domingo (0), seleccionamos lunes por defecto
+  if (d.getDay() === 0) {
+    d.setDate(d.getDate() + 1);
+  }
   const y = d.getFullYear();
   const m = (d.getMonth() + 1).toString().padStart(2, "0");
   const day = d.getDate().toString().padStart(2, "0");
@@ -51,8 +60,9 @@ export default function HomePage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Datos seleccionados
-  const [selectedService, setSelectedService] = useState<string>(NAIL_SERVICES[0].label);
-  const [date, setDate] = useState<string>(todayISO());
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(NAIL_SERVICES[0].id);
+  const [includeRemoval, setIncludeRemoval] = useState<boolean>(false);
+  const [date, setDate] = useState<string>(nextAvailableDateISO());
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -82,6 +92,13 @@ export default function HomePage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  const currentServiceObj =
+    NAIL_SERVICES.find((s) => s.id === selectedServiceId) || NAIL_SERVICES[0];
+  const totalPrice = currentServiceObj.price + (includeRemoval ? REMOVAL_PRICE : 0);
+  const fullServiceLabel = `${currentServiceObj.label}${
+    includeRemoval ? " + Retiro de otro salón" : ""
+  } (${formatARS(totalPrice)})`;
 
   // Consulta turnos disponibles para una fecha
   const fetchSlots = useCallback(async (d: string) => {
@@ -177,7 +194,7 @@ export default function HomePage() {
           time: selectedSlot.time,
           name: name.trim(),
           phone: phone.trim(),
-          service: selectedService,
+          service: fullServiceLabel,
           notes: notes.trim(),
         }),
       });
@@ -191,7 +208,7 @@ export default function HomePage() {
         time: selectedSlot.time,
         name: name.trim(),
         phone: phone.trim(),
-        service: selectedService,
+        service: fullServiceLabel,
         notes: notes.trim(),
         createdAt: new Date().toISOString(),
       };
@@ -202,7 +219,7 @@ export default function HomePage() {
       setConfirmedTicket({
         date,
         time: selectedSlot.time,
-        service: selectedService,
+        service: fullServiceLabel,
         name: name.trim(),
         phone: phone.trim(),
       });
@@ -292,7 +309,6 @@ export default function HomePage() {
 
           {irisState === "closed" && (
             <div className="absolute inset-0 bg-[#523450] flex flex-col items-center justify-center text-center p-6 text-white animate-cartoon-pop">
-              {/* Personaje completamente solo, sin círculo ni borde detrás, en tamaño grande */}
               <div className="w-64 h-52 sm:w-80 sm:h-64 relative mb-3 animate-rubber-bob">
                 <Image
                   src="/starbnails-banner.png?v=5"
@@ -371,7 +387,7 @@ export default function HomePage() {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* HERO: PERSONAJE SOSTENIENDO EL CARTEL (MÁS GRANDE Y CERCANO)  */}
+      {/* HERO: PERSONAJE SOSTENIENDO EL CARTEL                         */}
       {/* ------------------------------------------------------------- */}
       <header className="relative z-10 flex flex-col items-center justify-center shrink-0 mb-1 sm:mb-2">
         <div className="w-64 sm:w-80 md:w-96 aspect-[578/432] relative animate-rubber-bob">
@@ -456,8 +472,9 @@ export default function HomePage() {
                         <strong className="text-slate-950">{confirmedTicket.time} hs</strong>
                       </span>
                     </p>
-                    <p className="text-xs sm:text-sm font-bold text-slate-600">
-                      Contacto: {confirmedTicket.phone}
+                    <p className="text-xs sm:text-sm font-bold text-slate-700">
+                      Recordá abonar la seña de{" "}
+                      <strong className="text-slate-950">{formatARS(DEPOSIT_AMOUNT)}</strong> (se descuenta del total).
                     </p>
                   </div>
 
@@ -474,9 +491,9 @@ export default function HomePage() {
                 <div className="border-t-2 border-dashed border-black pt-3.5 flex items-center justify-between gap-2">
                   <span className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-base text-emerald-700">
-                      favorite
+                      call
                     </span>
-                    <span>¡Te esperamos!</span>
+                    <span>Consultas: {CONTACT_PHONE}</span>
                   </span>
                   <button
                     type="button"
@@ -574,53 +591,95 @@ export default function HomePage() {
 
                 {/* PASO 1: ELEGÍ EL SERVICIO */}
                 {currentStep === 1 && (
-                  <div className="space-y-4 animate-cartoon-pop">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5">
+                  <div className="space-y-3.5 animate-cartoon-pop">
+                    {/* Los 3 servicios principales con sus precios */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                       {NAIL_SERVICES.map((s) => {
-                        const isSelected = selectedService === s.label;
+                        const isSelected = selectedServiceId === s.id;
                         return (
                           <button
                             key={s.id}
                             type="button"
-                            onClick={() => setSelectedService(s.label)}
-                            className={`p-3 sm:p-3.5 rounded-2xl border-[2.5px] border-black text-left transition-colors duration-150 cursor-pointer flex items-center gap-2.5 sm:gap-3 select-none ${
+                            onClick={() => setSelectedServiceId(s.id)}
+                            className={`p-3 sm:p-4 rounded-2xl border-[2.5px] border-black text-left transition-colors duration-150 cursor-pointer flex sm:flex-col items-center sm:items-start justify-between gap-2 select-none ${
                               isSelected
                                 ? "bg-[#523450] text-white shadow-[3px_3px_0px_#000]"
                                 : "bg-white text-slate-950 shadow-[2px_2px_0px_#000] hover:bg-amber-50"
                             }`}
                           >
-                            <span
-                              className={`material-symbols-outlined text-xl sm:text-2xl shrink-0 ${
-                                isSelected ? "text-amber-300" : "text-[#523450]"
-                              }`}
-                            >
-                              {s.icon}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs sm:text-sm font-black leading-snug line-clamp-1">
-                                {s.label}
-                              </div>
-                              <div
-                                className={`text-[10px] sm:text-xs font-semibold leading-snug line-clamp-1 mt-0.5 ${
-                                  isSelected ? "text-amber-100" : "text-slate-600"
+                            <div className="flex items-center gap-2.5">
+                              <span
+                                className={`material-symbols-outlined text-xl sm:text-2xl shrink-0 ${
+                                  isSelected ? "text-amber-300" : "text-[#523450]"
                                 }`}
                               >
-                                {s.desc}
+                                {s.icon}
+                              </span>
+                              <div>
+                                <div className="text-sm sm:text-base font-black leading-tight">
+                                  {s.label}
+                                </div>
+                                <div
+                                  className={`text-[11px] font-semibold mt-0.5 ${
+                                    isSelected ? "text-amber-100" : "text-slate-600"
+                                  }`}
+                                >
+                                  Duración: 1 h 15 min
+                                </div>
                               </div>
+                            </div>
+                            <div
+                              className={`font-cartoon text-base sm:text-lg px-2.5 py-0.5 rounded-lg border-2 border-black ${
+                                isSelected
+                                  ? "bg-vintage-yellow text-slate-950"
+                                  : "bg-amber-100 text-slate-950"
+                              }`}
+                            >
+                              {formatARS(s.price)}
                             </div>
                           </button>
                         );
                       })}
                     </div>
 
-                    <div className="pt-1 flex justify-end">
+                    {/* Opción de Retiro de otro salón (+$3.000) */}
+                    <button
+                      type="button"
+                      onClick={() => setIncludeRemoval((prev) => !prev)}
+                      className={`w-full p-2.5 sm:p-3 rounded-xl border-2 border-black transition-colors cursor-pointer flex items-center justify-between text-xs sm:text-sm font-bold ${
+                        includeRemoval
+                          ? "bg-amber-200 text-slate-950 shadow-[2px_2px_0px_#000]"
+                          : "bg-white text-slate-800 hover:bg-amber-50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-lg text-[#523450]">
+                          {includeRemoval ? "check_box" : "check_box_outline_blank"}
+                        </span>
+                        <span>Sumar retiro de otro salón</span>
+                      </div>
+                      <span className="font-black text-slate-950">+{formatARS(REMOVAL_PRICE)}</span>
+                    </button>
+
+                    {/* Pie del Paso 1: Aviso de Seña y Botón Continuar */}
+                    <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="text-xs font-bold text-slate-800 bg-[#f5ecf3] border-2 border-black rounded-xl px-3 py-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-base text-[#523450]">
+                          payments
+                        </span>
+                        <span>
+                          Seña para confirmar: <strong className="text-slate-950">{formatARS(DEPOSIT_AMOUNT)}</strong>{" "}
+                          (se descuenta del total)
+                        </span>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => {
                           setErrorMsg(null);
                           setCurrentStep(2);
                         }}
-                        className="w-full sm:w-auto retro-btn bg-vintage-yellow hover:bg-amber-300 text-slate-950 font-cartoon text-sm sm:text-base py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full sm:w-auto retro-btn bg-vintage-yellow hover:bg-amber-300 text-slate-950 font-cartoon text-sm sm:text-base py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer shrink-0"
                       >
                         <span>Elegir Día y Hora</span>
                         <span className="material-symbols-outlined text-lg">arrow_forward</span>
@@ -631,13 +690,13 @@ export default function HomePage() {
 
                 {/* PASO 2: ELEGÍ DÍA Y HORARIO */}
                 {currentStep === 2 && (
-                  <div className="space-y-3 sm:space-y-4 animate-cartoon-pop">
+                  <div className="space-y-3 animate-cartoon-pop">
                     <DatePicker value={date} onChange={setDate} />
 
                     <div>
                       <div className="flex items-center justify-between mb-1.5 px-1">
                         <span className="text-xs sm:text-sm font-bold text-slate-800">
-                          Horarios para el {date}:
+                          Horarios disponibles ({date}):
                         </span>
                         {selectedSlot && (
                           <span className="bg-vintage-yellow text-slate-950 font-black text-xs px-2.5 py-0.5 rounded-full border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
@@ -651,6 +710,24 @@ export default function HomePage() {
                         onSelect={setSelectedSlot}
                         loading={loadingSlots}
                       />
+                    </div>
+
+                    {/* Aviso por horarios antes de las 16:00 */}
+                    <div className="bg-[#f5ecf3] border-2 border-black rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-800">
+                      <span className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-base text-[#523450]">
+                          schedule
+                        </span>
+                        <span>¿Necesitás turno antes de las 16:00 hs por excepción?</span>
+                      </span>
+                      <a
+                        href={`https://wa.me/549${CONTACT_PHONE}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-black text-[#523450] hover:text-black"
+                      >
+                        Consultar al {CONTACT_PHONE}
+                      </a>
                     </div>
 
                     <div className="pt-1 flex items-center justify-between gap-3">
@@ -689,14 +766,14 @@ export default function HomePage() {
 
                 {/* PASO 3: TUS DATOS DE RESERVA */}
                 {currentStep === 3 && (
-                  <form onSubmit={handleConfirmBooking} className="space-y-3 sm:space-y-3.5 animate-cartoon-pop select-text">
-                    <div className="bg-[#f5ecf3] border-2 border-black rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-xs sm:text-sm">
+                  <form onSubmit={handleConfirmBooking} className="space-y-3 animate-cartoon-pop select-text">
+                    <div className="bg-[#f5ecf3] border-2 border-black rounded-xl p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs sm:text-sm">
                       <div>
-                        <span className="font-cartoon text-[#523450] mr-1.5">Cita:</span>
-                        <strong className="font-black text-slate-950">{selectedService}</strong>
+                        <span className="font-cartoon text-[#523450] mr-1.5">Servicio:</span>
+                        <strong className="font-black text-slate-950">{fullServiceLabel}</strong>
                       </div>
                       <div className="font-black text-slate-900">
-                        {date} · {selectedSlot?.time} hs
+                        {date} · {selectedSlot?.time} hs · Seña: {formatARS(DEPOSIT_AMOUNT)}
                       </div>
                     </div>
 
@@ -730,7 +807,7 @@ export default function HomePage() {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           required
-                          placeholder="Ej: 11 2345-6789"
+                          placeholder="Ej: 380 412-3456"
                           className="w-full rounded-xl border-2 border-black bg-white px-3 py-2 text-xs sm:text-sm font-bold text-slate-950 shadow-[2px_2px_0px_#000] focus:outline-none focus:bg-amber-50/40"
                         />
                       </div>
@@ -747,7 +824,7 @@ export default function HomePage() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows={2}
-                        placeholder="Ej: Retiro previo, diseño especial..."
+                        placeholder="Ej: Diseño o consulta adicional..."
                         className="w-full rounded-xl border-2 border-black bg-white px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-950 shadow-[2px_2px_0px_#000] focus:outline-none focus:bg-amber-50/40 resize-none"
                       />
                     </div>
