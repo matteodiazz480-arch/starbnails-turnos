@@ -330,44 +330,10 @@ export default function HomePage() {
     }
   };
 
-  // Generar imagen del ticket, descargarla/copiarla y abrir WhatsApp con los datos listos
-  const handleFinalizeOnWhatsApp = async (appointment: UserAppointment) => {
-    try {
-      const dataUrl = generateTicketImageDataUrl({
-        name: appointment.name,
-        phone: appointment.phone,
-        service: appointment.service || "Servicio de Manicuría",
-        date: appointment.date,
-        time: appointment.time,
-      });
-
-      if (dataUrl) {
-        // 1. Descarga automática de la imagen del comprobante
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `comprobante-turno-${appointment.date}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // 2. Copiar imagen al portapapeles si el navegador lo permite (para pegar directo en WhatsApp)
-        if (navigator.clipboard && "write" in navigator.clipboard) {
-          fetch(dataUrl)
-            .then((r) => r.blob())
-            .then((blob) => {
-              const item = new ClipboardItem({ "image/png": blob });
-              navigator.clipboard.write([item]).catch(() => {});
-            })
-            .catch(() => {});
-        }
-      }
-    } catch (e) {
-      console.error("Error generando imagen del ticket:", e);
-    }
-
-    // 3. Abrir WhatsApp de la dueña con toda la información lista
+  // Abrir WhatsApp de la dueña directamente con el mensaje armado (sin descargar imagen)
+  const handleFinalizeOnWhatsApp = (appointment: UserAppointment) => {
     const msg = [
-      "Hola! Agendé un turno en la web y te escribo para enviarte el comprobante y coordinar la seña:",
+      "Hola! Agendé un turno en la web y te escribo para coordinar la seña:",
       "",
       `• Nombre: ${appointment.name}`,
       `• Servicio: ${appointment.service}`,
@@ -378,6 +344,64 @@ export default function HomePage() {
 
     const waUrl = `https://wa.me/549${CONTACT_PHONE}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, "_blank", "noopener,noreferrer");
+  };
+
+  // Compartir el comprobante (usando la API nativa de compartir para que el usuario elija a quién enviárselo)
+  const handleShareTicket = async (appointment: UserAppointment) => {
+    const shareText = [
+      "Comprobante de turno - StarbNails:",
+      `• Nombre: ${appointment.name}`,
+      `• Servicio: ${appointment.service}`,
+      `• Fecha: ${appointment.date}`,
+      `• Hora: ${appointment.time} hs`,
+      `• Seña: ${formatARS(DEPOSIT_AMOUNT)}`,
+    ].join("\n");
+
+    try {
+      const dataUrl = generateTicketImageDataUrl({
+        name: appointment.name,
+        phone: appointment.phone,
+        service: appointment.service || "Servicio de Manicuría",
+        date: appointment.date,
+        time: appointment.time,
+      });
+
+      if (dataUrl) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], `comprobante-${appointment.date}.png`, {
+          type: "image/png",
+        });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: "Comprobante de turno - StarbNails",
+            text: shareText,
+            files: [file],
+          });
+          return;
+        }
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError") return; // El usuario canceló la ventana de compartir
+      console.warn("No se pudo compartir imagen vía navigator.share:", err);
+    }
+
+    // Fallback estándar de compartir texto si no soporta archivos
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Comprobante de turno - StarbNails",
+          text: shareText,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+      }
+    }
+
+    // Fallback final: compartir vía WhatsApp genérico para elegir contacto
+    const fallbackUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+    window.open(fallbackUrl, "_blank", "noopener,noreferrer");
   };
 
   // Cancelar turno
@@ -616,21 +640,31 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Botón principal: Descarga el ticket como imagen y abre WhatsApp */}
-                <div className="pt-1">
+                {/* Botones de acción del turno */}
+                <div className="pt-1 space-y-2">
+                  {/* Botón 1: Contactar a la dueña por WhatsApp con mensaje armado */}
                   <button
                     type="button"
                     onClick={() => handleFinalizeOnWhatsApp(activeAppointment)}
-                    className="w-full retro-btn bg-vintage-yellow hover:bg-amber-300 text-slate-950 py-3 px-5 rounded-2xl font-cartoon text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full retro-btn bg-vintage-yellow hover:bg-amber-300 text-slate-950 py-2.5 sm:py-3 px-5 rounded-2xl font-cartoon text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-xl text-[#523450]">
                       chat
                     </span>
                     <span>Para finalizar, contactame</span>
                   </button>
-                  <p className="text-[11px] font-bold text-slate-600 text-center mt-1.5">
-                    Al tocar se descarga tu ticket en imagen y se abre el chat para enviarlo.
-                  </p>
+
+                  {/* Botón 2: Compartir el ticket (elige a quién compartir) */}
+                  <button
+                    type="button"
+                    onClick={() => handleShareTicket(activeAppointment)}
+                    className="w-full retro-btn bg-white hover:bg-amber-50 text-slate-950 py-2 sm:py-2.5 px-4 rounded-2xl font-cartoon text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-lg text-[#523450]">
+                      share
+                    </span>
+                    <span>Compartir comprobante</span>
+                  </button>
                 </div>
 
                 {/* Acciones secundarias (Cancelar / Agendar otro) */}
