@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>StarbNails - Propuesta de Diseño Web</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Shrikhand&family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #111;
+      background-color: #faf5ea;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+
+    .slide {
+      width: 297mm;
+      height: 210mm;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14mm 16mm 10mm 16mm;
+    }
+
+    /* ---------------- PÁGINA 1: PORTADA ---------------- */
+    .slide-cover {
+      background-color: #FFD15C;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20mm;
+    }
+
+    .cover-badge-container {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .cover-circle-shadow {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: #000;
+    }
+
+    .cover-circle {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: #fff;
+      border: 4px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .cover-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .cover-title {
+      font-family: 'Shrikhand', cursive;
+      font-size: 52px;
+      line-height: 1;
+      letter-spacing: 2px;
+      color: #111;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .cover-subtitle {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      color: #E63946;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .cover-desc {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+      max-width: 620px;
+      line-height: 1.5;
+      margin-bottom: 36px;
+    }
+
+    .cover-pill-footer {
+      background: #fff;
+      border: 2.5px solid #000;
+      box-shadow: 3px 3px 0px #000;
+      padding: 10px 28px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #111;
+    }
+
+    /* ---------------- PÁGINAS INTERNAS (2-5) ---------------- */
+    .slide-inner {
+      background-color: #FAF5EA;
+      background-image: 
+        radial-gradient(#d8cbb0 0.85px, transparent 0.85px),
+        radial-gradient(#d8cbb0 0.85px, #FAF5EA 0.85px);
+      background-size: 20px 20px;
+      background-position: 0 0, 10px 10px;
+    }
+
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 2.5px solid #000;
+      margin-bottom: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pill-badge {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 2px solid #000;
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .badge-computadora {
+      background-color: #FFD15C;
+      color: #000;
+    }
+
+    .badge-celular {
+      background-color: #FF5555;
+      color: #fff;
+    }
+
+    .badge-calendar {
+      background-color: #1A73E8;
+      color: #fff;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #111;
+      letter-spacing: -0.2px;
+    }
+
+    .header-right {
+      font-size: 12px;
+      font-weight: 700;
+      color: #555;
+    }
+
+    .slide-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Mockups de Computadora (Desktop Windows) */
+    .desktop-windows-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .window-card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .window-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #111;
+      margin-bottom: 7px;
+      padding-left: 2px;
+    }
+
+    .browser-frame {
+      background: #fff;
+      border: 2.5px solid #000;
+      border-radius: 14px;
+      box-shadow: 4px 4px 0px #000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .browser-topbar {
+      height: 22px;
+      background: #F1F3F5;
+      border-bottom: 2px solid #000;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.3);
+    }
+    .dot-red { background: #FF5F56; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green { background: #27C93F; }
+
+    .browser-body {
+      width: 100%;
+      height: 290px;
+      overflow: hidden;
+      background: #FAF5EA;
+    }
+
+    .browser-body img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+
+    /* Mockups de Celulares (Mobile 4-Grid) */
+    .mobile-phones-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .phone-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .phone-tag {
+      background: #fff;
+      border: 2px solid #000;
+      box-shadow: 2px 2px 0px #000;
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #111;
+      margin-bottom: 8px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .phone-frame {
+      width: 100%;
+      background: #000;
+      border: 3px solid #000;
+      border-radius: 28px;
+      box-shadow: 4px 4px 0px #000;
+      overflow: hidden;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 315px;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #FAF5EA;
+      position: relative;
+    }
+
+    .phone-notch {
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 44px;
+      height: 5px;
+      background: #000;
+      border-radius: 999px;
+      z-index: 10;
+    }
+
+    .phone-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+
+    /* Página 5: Layout Híbrido */
+    .page5-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.85fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .info-card-box {
+      background: #fff;
+      border: 2.5px solid #000;
+      box-shadow: 4px 4px 0px #000;
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-top: 10px;
+    }
+
+    .info-card-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: #1A73E8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-card-desc {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #333;
+      line-height: 1.45;
+    }
+
+    /* Footer de diapositiva */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1.5px solid rgba(0,0,0,0.15);
+      font-size: 10px;
+      font-weight: 700;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PÁGINA 1: PORTADA ==================== -->
+  <div class="slide slide-cover">
+    <div class="cover-badge-container">
+      <div class="cover-circle-shadow"></div>
+      <div class="cover-circle">
+        <img src="/starbnails-banner.png?v=5" alt="StarbNails Logo">
+      </div>
+    </div>
+
+    <h1 class="cover-title">STARBNAILS</h1>
+    <div class="cover-subtitle">CHICKEN FRIED & BURGERS STYLE · MANICURÍA & NAIL ART</div>
+    <p class="cover-desc">
+      Propuesta de diseño web temático, carta de servicios interactiva con reserva de turnos,
+      cálculo de señas en tiempo real y vinculación directa con Google Calendar.
+    </p>
+
+    <div class="cover-pill-footer">
+      Hecho por Nexo Creative
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 2: COMPUTADORA (SERVICIOS Y ADICIONAL) ==================== -->
+  <div class="slide slide-inner">
+    <div class="slide-header">
+      <div class="header-left">
+        <span class="pill-badge badge-computadora">COMPUTADORA</span>
+        <span class="header-title">1. Página Principal & Selección de Servicios</span>
+      </div>
+      <div class="header-right">Resolución Escritorio (1366x768)</div>
+    </div>
+
+    <div class="slide-content">
+      <div class="desktop-windows-grid">
+        <div class="window-card">
+          <div class="window-label">Portada, Mascota Oficial & Catálogo de Precios</div>
+          <div class="browser-frame">
+            <div class="browser-topbar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="browser-body">
+              <img src="/flow_captures/step1_clean_desktop.png" alt="Paso 1 Limpio">
+            </div>
+          </div>
+        </div>
+
+        <div class="window-card">
+          <div class="window-label">Selección de Servicio y Adicional de Retiro (Cálculo Automático)</div>
+          <div class="browser-frame">
+            <div class="browser-topbar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="browser-body">
+              <img src="/flow_captures/step1_selected_desktop.png" alt="Paso 1 Seleccionado">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>STARBNAILS — Propuesta de Diseño Web vinculado a Google Calendar</span>
+      <span>Página 2 de 5</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 3: COMPUTADORA (HORARIOS Y DATOS) ==================== -->
+  <div class="slide slide-inner">
+    <div class="slide-header">
+      <div class="header-left">
+        <span class="pill-badge badge-computadora">COMPUTADORA</span>
+        <span class="header-title">2. Selección de Horarios & Datos de la Clienta</span>
+      </div>
+      <div class="header-right">Sincronización en Tiempo Real</div>
+    </div>
+
+    <div class="slide-content">
+      <div class="desktop-windows-grid">
+        <div class="window-card">
+          <div class="window-label">Paso 2: Días de Atención y Turnos de 75 min (Google Calendar)</div>
+          <div class="browser-frame">
+            <div class="browser-topbar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="browser-body">
+              <img src="/flow_captures/step2_datetime_desktop.png" alt="Paso 2 Horarios">
+            </div>
+          </div>
+        </div>
+
+        <div class="window-card">
+          <div class="window-label">Paso 3: Formulario con Validación de Contacto y Notas</div>
+          <div class="browser-frame">
+            <div class="browser-topbar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="browser-body">
+              <img src="/flow_captures/step3_form_desktop.png" alt="Paso 3 Formulario">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>STARBNAILS — Medición de disponibilidad en tiempo real sin sobreturnos</span>
+      <span>Página 3 de 5</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 4: CELULAR (MOBILE FIRST) ==================== -->
+  <div class="slide slide-inner">
+    <div class="slide-header">
+      <div class="header-left">
+        <span class="pill-badge badge-celular">CELULAR</span>
+        <span class="header-title">3. Experiencia en Celulares (Mobile First)</span>
+      </div>
+      <div class="header-right">Diseño 100% Adaptable a Smartphone</div>
+    </div>
+
+    <div class="slide-content">
+      <div class="mobile-phones-grid">
+        <div class="phone-column">
+          <div class="phone-tag">1. Servicios & Precios</div>
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <img src="/flow_captures/step1_services_mobile.png" alt="Servicios Móvil">
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-column">
+          <div class="phone-tag">2. Día y Horario</div>
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <img src="/flow_captures/step2_datetime_mobile.png" alt="Horarios Móvil">
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-column">
+          <div class="phone-tag">3. Tus Datos</div>
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <img src="/flow_captures/step3_form_mobile.png" alt="Datos Móvil">
+            </div>
+          </div>
+        </div>
+
+        <div class="phone-column">
+          <div class="phone-tag">4. Comprobante Final</div>
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <img src="/flow_captures/step5_ticket_mobile.png" alt="Comprobante Móvil" style="object-position: center 55%;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>STARBNAILS — Navegación táctil fluida sin descargas de app</span>
+      <span>Página 4 de 5</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 5: GOOGLE CALENDAR & WHATSAPP ==================== -->
+  <div class="slide slide-inner">
+    <div class="slide-header">
+      <div class="header-left">
+        <span class="pill-badge badge-calendar">GOOGLE CALENDAR</span>
+        <span class="header-title">4. Confirmación Oficial, Google Calendar & WhatsApp</span>
+      </div>
+      <div class="header-right">Automatización y Bloqueo en Tiempo Real</div>
+    </div>
+
+    <div class="slide-content">
+      <div class="page5-grid">
+        <!-- Izquierda: Comprobante en Computadora -->
+        <div class="window-card">
+          <div class="window-label">Comprobante Oficial en Computadora (Ticket con Seña)</div>
+          <div class="browser-frame">
+            <div class="browser-topbar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="browser-body" style="height: 270px;">
+              <img src="/flow_captures/step5_ticket_desktop.png" alt="Comprobante Desktop" style="object-position: center 58%;">
+            </div>
+          </div>
+
+          <div class="info-card-box">
+            <div class="info-card-title">
+              <span>📅</span> Sincronización Directa con Google Calendar
+            </div>
+            <div class="info-card-desc">
+              Cada reserva confirmada bloquea inmediatamente el espacio en la cuenta oficial de Google Calendar
+              (<strong>annap98.apb@gmail.com</strong>), enviando recordatorios automáticos y eliminando el riesgo de superposiciones.
+            </div>
+          </div>
+        </div>
+
+        <!-- Derecha: Celular con el Comprobante y WhatsApp -->
+        <div class="phone-column" style="width: 205px; margin: 0 auto;">
+          <div class="phone-tag" style="background: #25D366; color: #fff; border-color: #000;">
+            WhatsApp & Seña
+          </div>
+          <div class="phone-frame">
+            <div class="phone-screen" style="height: 335px;">
+              <div class="phone-notch"></div>
+              <img src="/flow_captures/step5_ticket_mobile.png" alt="Comprobante Mobile WhatsApp" style="object-position: center 62%;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>STARBNAILS — Sistema conectado a Google Calendar · Hecho por Nexo Creative</span>
+      <span>Página 5 de 5</span>
+    </div>
+  </div>
+
+</body>
+</html>
